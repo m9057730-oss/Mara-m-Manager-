@@ -1,5 +1,5 @@
 
-name: Android Debug APK
+name: M Manager Android Debug APK
 
 on:
   push:
@@ -26,10 +26,22 @@ jobs:
         with:
           gradle-version: '9.3.1'
 
-      - name: Check project files
+      - name: Check Firebase configuration
         run: |
-          ls -la
-          ls -la app
+          test -f app/google-services.json
+          echo "Firebase configuration found"
+
+      - name: Generate Debug Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build Debug APK
         run: |
@@ -41,4 +53,6 @@ jobs:
           name: M-Manager-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 7
+          
           
