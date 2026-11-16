@@ -1,0 +1,369 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: default-deny all unspecified paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isOptionalNumber(data, key, minVal, maxVal) {
+      return !(key in data) || (data[key] is number && data[key] >= minVal && data[key] <= maxVal);
+    }
+
+    function isOptionalBool(data, key) {
+      return !(key in data) || data[key] is bool;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidRestaurantProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+        data.restaurantName is string && data.restaurantName.size() >= 1 && data.restaurantName.size() <= 80 &&
+        data.language is string && data.language in ['en', 'hi', 'pa'] &&
+        isOptionalString(data, 'address', 200) &&
+        isOptionalString(data, 'phone', 30) &&
+        isOptionalString(data, 'gstin', 30) &&
+        isOptionalNumber(data, 'gstPercent', 0, 30) &&
+        isOptionalNumber(data, 'dailyTarget', 0, 10000000) &&
+        isOptionalNumber(data, 'monthlyRent', 0, 10000000) &&
+        isOptionalNumber(data, 'monthlyElectricity', 0, 10000000) &&
+        isOptionalNumber(data, 'dailyStaffFoodBudget', 0, 1000000) &&
+        isOptionalString(data, 'upiId', 100) &&
+        isOptionalBool(data, 'autoKotEnabled') &&
+        isOptionalString(data, 'zomatoStoreId', 100) &&
+        isOptionalString(data, 'swiggyStoreId', 100) &&
+        isOptionalString(data, 'otherAppWebhook', 300) &&
+        isOptionalString(data, 'themePreset', 40) &&
+        isOptionalString(data, 'accentColorHex', 16) &&
+        isOptionalString(data, 'textColorHex', 16) &&
+        isOptionalString(data, 'wallpaperPath', 500) &&
+        isOptionalNumber(data, 'wallpaperOpacity', 0, 1) &&
+        isOptionalBool(data, 'darkMode');
+    }
+
+    function isValidMenuItem(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+        data.price is number && data.price >= 0 && data.price <= 1000000 &&
+        data.veg is bool &&
+        data.available is bool &&
+        isOptionalNumber(data, 'costPrice', 0, 1000000) &&
+        isOptionalString(data, 'description', 300) &&
+        (!( 'prepMinutes' in data) || (data.prepMinutes is int && data.prepMinutes >= 0 && data.prepMinutes <= 240)) &&
+        isOptionalString(data, 'courseType', 40);
+    }
+
+    function isValidOrderRecord(data) {
+      return data.orderNumber is string && data.orderNumber.size() >= 1 && data.orderNumber.size() <= 30 &&
+        data.channel is string && data.channel in ['TABLE', 'OWN_DELIVERY', 'PICKUP', 'ONLINE', 'ZOMATO', 'SWIGGY', 'OTHER_APP'] &&
+        data.itemsSummary is string && data.itemsSummary.size() >= 1 && data.itemsSummary.size() <= 1000 &&
+        data.itemsCount is int && data.itemsCount >= 1 && data.itemsCount <= 500 &&
+        data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 10000000 &&
+        data.gstEnabled is bool &&
+        data.totalAmount is number && data.totalAmount >= 0 && data.totalAmount <= 10000000 &&
+        data.paymentMethod is string && data.paymentMethod in ['CASH', 'CARD', 'QR_UPI', 'ONLINE_PREPAID'] &&
+        data.status is string && data.status in ['PENDING', 'RUNNING', 'COMPLETED', 'CANCELLED'] &&
+        isOptionalString(data, 'tableOrRef', 60) &&
+        isOptionalString(data, 'customerName', 80) &&
+        isOptionalString(data, 'customerPhone', 30) &&
+        isOptionalNumber(data, 'gstPercent', 0, 30) &&
+        isOptionalNumber(data, 'gstAmount', 0, 10000000) &&
+        isOptionalNumber(data, 'tipAmount', 0, 1000000) &&
+        isOptionalBool(data, 'kotPrinted') &&
+        isOptionalBool(data, 'billPrinted') &&
+        isOptionalString(data, 'notes', 300) &&
+        (!( 'createdAtMillis' in data) || (data.createdAtMillis is int && data.createdAtMillis >= 0));
+    }
+
+    function isValidStaffMember(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.role is string && data.role.size() >= 1 && data.role.size() <= 50 &&
+        data.monthlySalary is number && data.monthlySalary >= 0 && data.monthlySalary <= 10000000 &&
+        data.active is bool &&
+        isOptionalString(data, 'phone', 30) &&
+        isOptionalNumber(data, 'dailyFoodAllowance', 0, 100000) &&
+        (!( 'shiftHours' in data) || (data.shiftHours is int && data.shiftHours >= 1 && data.shiftHours <= 24));
+    }
+
+    function isValidAttendanceRecord(data) {
+      return data.staffId is string && data.staffId.size() >= 1 && data.staffId.size() <= 128 &&
+        data.staffName is string && data.staffName.size() >= 1 && data.staffName.size() <= 80 &&
+        data.dateStr is string && data.dateStr.size() >= 1 && data.dateStr.size() <= 20 &&
+        data.status is string && data.status in ['PRESENT', 'HALF_DAY', 'ABSENT'] &&
+        isOptionalString(data, 'role', 50) &&
+        isOptionalString(data, 'checkInTimeStr', 30) &&
+        isOptionalString(data, 'checkOutTimeStr', 30) &&
+        isOptionalNumber(data, 'tipEarned', 0, 1000000) &&
+        isOptionalString(data, 'notes', 200);
+    }
+
+    function isValidInventoryItem(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.category is string && data.category in ['KITCHEN', 'PACKING', 'TANDOOR_COAL', 'COLD_DRINKS'] &&
+        data.quantity is number && data.quantity >= 0 && data.quantity <= 10000000 &&
+        data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 20 &&
+        data.minThreshold is number && data.minThreshold >= 0 && data.minThreshold <= 10000000 &&
+        isOptionalNumber(data, 'costPerUnit', 0, 1000000) &&
+        isOptionalString(data, 'expiryDate', 30) &&
+        isOptionalString(data, 'supplierPhone', 30);
+    }
+
+    function isValidDailyExpense(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+        data.category is string && data.category in ['STAFF_SALARY', 'SHOP_RENT', 'MATERIAL_GAS', 'EXPIRY_LOSS', 'ELECTRICITY', 'STAFF_FOOD', 'OTHER'] &&
+        data.amount is number && data.amount >= 0 && data.amount <= 10000000 &&
+        data.dateStr is string && data.dateStr.size() >= 1 && data.dateStr.size() <= 20 &&
+        isOptionalString(data, 'notes', 300);
+    }
+
+    function isValidPartyBooking(data) {
+      return data.partyName is string && data.partyName.size() >= 1 && data.partyName.size() <= 100 &&
+        data.eventDate is string && data.eventDate.size() >= 1 && data.eventDate.size() <= 40 &&
+        data.guestCount is int && data.guestCount >= 1 && data.guestCount <= 10000 &&
+        data.status is string && data.status in ['BOOKED', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] &&
+        isOptionalString(data, 'partyPhone', 30) &&
+        isOptionalNumber(data, 'totalBudget', 0, 100000000) &&
+        isOptionalNumber(data, 'advancePaid', 0, 100000000) &&
+        isOptionalString(data, 'inventoryUsedSummary', 1000) &&
+        isOptionalString(data, 'chefRequirements', 1000);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) && isValidId(userId) &&
+        incoming().keys().hasAll(['userId', 'restaurantName', 'language', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly([
+          'userId', 'restaurantName', 'address', 'phone', 'gstin', 'gstPercent',
+          'dailyTarget', 'monthlyRent', 'monthlyElectricity', 'dailyStaffFoodBudget',
+          'upiId', 'autoKotEnabled', 'zomatoStoreId', 'swiggyStoreId', 'otherAppWebhook',
+          'language', 'themePreset', 'accentColorHex', 'textColorHex',
+          'wallpaperPath', 'wallpaperOpacity', 'darkMode', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidTimestamp(incoming().createdAt) &&
+        isValidTimestamp(incoming().updatedAt) &&
+        isValidRestaurantProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) && isValidId(userId) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        isValidTimestamp(incoming().updatedAt) &&
+        isValidRestaurantProfile(incoming(), userId) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'restaurantName', 'address', 'phone', 'gstin', 'gstPercent',
+          'dailyTarget', 'monthlyRent', 'monthlyElectricity', 'dailyStaffFoodBudget',
+          'upiId', 'autoKotEnabled', 'zomatoStoreId', 'swiggyStoreId', 'otherAppWebhook',
+          'language', 'themePreset', 'accentColorHex', 'textColorHex',
+          'wallpaperPath', 'wallpaperOpacity', 'darkMode', 'updatedAt'
+        ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /menu_items/{itemId} {
+        allow get: if isOwner(userId) && isValidId(itemId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(itemId) &&
+          incoming().keys().hasAll(['name', 'category', 'price', 'veg', 'available', 'createdAt', 'updatedAt']) &&
+          incoming().keys().hasOnly([
+            'name', 'category', 'price', 'costPrice', 'description',
+            'veg', 'available', 'prepMinutes', 'courseType', 'createdAt', 'updatedAt'
+          ]) &&
+          isValidTimestamp(incoming().createdAt) &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidMenuItem(incoming());
+        allow update: if isOwner(userId) && isValidId(itemId) &&
+          incoming().createdAt == existing().createdAt &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidMenuItem(incoming()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'category', 'price', 'costPrice', 'description',
+            'veg', 'available', 'prepMinutes', 'courseType', 'updatedAt'
+          ]);
+        allow delete: if isOwner(userId) && isValidId(itemId);
+      }
+
+      match /orders/{orderId} {
+        allow get: if isOwner(userId) && isValidId(orderId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(orderId) &&
+          incoming().keys().hasAll([
+            'orderNumber', 'channel', 'itemsSummary', 'itemsCount',
+            'subtotal', 'gstEnabled', 'totalAmount', 'paymentMethod',
+            'status', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().keys().hasOnly([
+            'orderNumber', 'channel', 'tableOrRef', 'customerName', 'customerPhone',
+            'itemsSummary', 'itemsCount', 'subtotal', 'gstEnabled', 'gstPercent',
+            'gstAmount', 'totalAmount', 'tipAmount', 'paymentMethod', 'status',
+            'kotPrinted', 'billPrinted', 'notes', 'createdAtMillis', 'createdAt', 'updatedAt'
+          ]) &&
+          isValidTimestamp(incoming().createdAt) &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidOrderRecord(incoming());
+        allow update: if isOwner(userId) && isValidId(orderId) &&
+          incoming().createdAt == existing().createdAt &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidOrderRecord(incoming()) && (
+            // Active orders can update status, billing, GST, payment, items, or print flags
+            (existing().status in ['PENDING', 'RUNNING'] &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'orderNumber', 'channel', 'tableOrRef', 'customerName', 'customerPhone',
+                'itemsSummary', 'itemsCount', 'subtotal', 'gstEnabled', 'gstPercent',
+                'gstAmount', 'totalAmount', 'tipAmount', 'paymentMethod', 'status',
+                'kotPrinted', 'billPrinted', 'notes', 'updatedAt'
+              ])) ||
+            // Completed orders lock financial/status fields and only allow printing receipts/KOT flags
+            (existing().status == 'COMPLETED' &&
+              incoming().status == existing().status &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['kotPrinted', 'billPrinted', 'updatedAt']))
+          );
+        allow delete: if isOwner(userId) && isValidId(orderId);
+      }
+
+      match /staff/{staffId} {
+        allow get: if isOwner(userId) && isValidId(staffId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(staffId) &&
+          incoming().keys().hasAll(['name', 'role', 'monthlySalary', 'active', 'createdAt', 'updatedAt']) &&
+          incoming().keys().hasOnly([
+            'name', 'role', 'phone', 'monthlySalary', 'dailyFoodAllowance',
+            'shiftHours', 'active', 'createdAt', 'updatedAt'
+          ]) &&
+          isValidTimestamp(incoming().createdAt) &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidStaffMember(incoming());
+        allow update: if isOwner(userId) && isValidId(staffId) &&
+          incoming().createdAt == existing().createdAt &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidStaffMember(incoming()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'role', 'phone', 'monthlySalary', 'dailyFoodAllowance',
+            'shiftHours', 'active', 'updatedAt'
+          ]);
+        allow delete: if isOwner(userId) && isValidId(staffId);
+      }
+
+      match /attendance/{attendanceId} {
+        allow get: if isOwner(userId) && isValidId(attendanceId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(attendanceId) &&
+          incoming().keys().hasAll(['staffId', 'staffName', 'dateStr', 'status', 'createdAt', 'updatedAt']) &&
+          incoming().keys().hasOnly([
+            'staffId', 'staffName', 'role', 'dateStr', 'checkInTimeStr',
+            'checkOutTimeStr', 'status', 'tipEarned', 'notes', 'createdAt', 'updatedAt'
+          ]) &&
+          isValidTimestamp(incoming().createdAt) &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidAttendanceRecord(incoming());
+        allow update: if isOwner(userId) && isValidId(attendanceId) &&
+          incoming().createdAt == existing().createdAt &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidAttendanceRecord(incoming()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'staffId', 'staffName', 'role', 'dateStr', 'checkInTimeStr',
+            'checkOutTimeStr', 'status', 'tipEarned', 'notes', 'updatedAt'
+          ]);
+        allow delete: if isOwner(userId) && isValidId(attendanceId);
+      }
+
+      match /inventory/{inventoryId} {
+        allow get: if isOwner(userId) && isValidId(inventoryId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(inventoryId) &&
+          incoming().keys().hasAll(['name', 'category', 'quantity', 'unit', 'minThreshold', 'createdAt', 'updatedAt']) &&
+          incoming().keys().hasOnly([
+            'name', 'category', 'quantity', 'unit', 'minThreshold',
+            'costPerUnit', 'expiryDate', 'supplierPhone', 'createdAt', 'updatedAt'
+          ]) &&
+          isValidTimestamp(incoming().createdAt) &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidInventoryItem(incoming());
+        allow update: if isOwner(userId) && isValidId(inventoryId) &&
+          incoming().createdAt == existing().createdAt &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidInventoryItem(incoming()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'category', 'quantity', 'unit', 'minThreshold',
+            'costPerUnit', 'expiryDate', 'supplierPhone', 'updatedAt'
+          ]);
+        allow delete: if isOwner(userId) && isValidId(inventoryId);
+      }
+
+      match /expenses/{expenseId} {
+        allow get: if isOwner(userId) && isValidId(expenseId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(expenseId) &&
+          incoming().keys().hasAll(['title', 'category', 'amount', 'dateStr', 'createdAt', 'updatedAt']) &&
+          incoming().keys().hasOnly([
+            'title', 'category', 'amount', 'dateStr', 'notes', 'createdAt', 'updatedAt'
+          ]) &&
+          isValidTimestamp(incoming().createdAt) &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidDailyExpense(incoming());
+        allow update: if isOwner(userId) && isValidId(expenseId) &&
+          incoming().createdAt == existing().createdAt &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidDailyExpense(incoming()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'category', 'amount', 'dateStr', 'notes', 'updatedAt'
+          ]);
+        allow delete: if isOwner(userId) && isValidId(expenseId);
+      }
+
+      match /party_bookings/{bookingId} {
+        allow get: if isOwner(userId) && isValidId(bookingId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(bookingId) &&
+          incoming().keys().hasAll(['partyName', 'eventDate', 'guestCount', 'status', 'createdAt', 'updatedAt']) &&
+          incoming().keys().hasOnly([
+            'partyName', 'partyPhone', 'eventDate', 'guestCount',
+            'totalBudget', 'advancePaid', 'inventoryUsedSummary',
+            'chefRequirements', 'status', 'createdAt', 'updatedAt'
+          ]) &&
+          isValidTimestamp(incoming().createdAt) &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidPartyBooking(incoming());
+        allow update: if isOwner(userId) && isValidId(bookingId) &&
+          incoming().createdAt == existing().createdAt &&
+          isValidTimestamp(incoming().updatedAt) &&
+          isValidPartyBooking(incoming()) &&
+          (existing().status in ['BOOKED', 'CONFIRMED'] &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'partyName', 'partyPhone', 'eventDate', 'guestCount',
+              'totalBudget', 'advancePaid', 'inventoryUsedSummary',
+              'chefRequirements', 'status', 'updatedAt'
+            ]));
+        allow delete: if isOwner(userId) && isValidId(bookingId);
+      }
+    }
+  }
+}

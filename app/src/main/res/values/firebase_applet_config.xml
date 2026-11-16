@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="firestore_database_id" translatable="false">ai-studio-android-maramana-6de4fbec-833b-4e22-8ed2-1a8637e23bdc</string>
+    <string name="recaptcha_site_key" translatable="false">6Lf-ICMuAAAAAC7EIdiPgddBUwnM9Hfh4Xk8P0L7</string>
+</resources>

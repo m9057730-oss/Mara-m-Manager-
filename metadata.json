@@ -1,0 +1,6 @@
+{
+  "name": "Mara Manager",
+  "description": "Smart multi-language restaurant operations, live order tracking, auto-KOT, inventory, staff attendance & AI salary/menu scanner app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

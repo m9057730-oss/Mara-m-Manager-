@@ -1,0 +1,206 @@
+{
+  "entities": {
+    "RestaurantProfile": {
+      "title": "RestaurantProfile",
+      "description": "Restaurant identity, tax/target settings, 3rd-party ordering connectors, and app customization settings.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "restaurantName": { "type": "string", "description": "Restaurant display name" },
+        "address": { "type": "string", "description": "Restaurant address" },
+        "phone": { "type": "string", "description": "Restaurant contact phone" },
+        "gstin": { "type": "string", "description": "GSTIN registration number" },
+        "gstPercent": { "type": "number", "description": "Default GST percentage" },
+        "dailyTarget": { "type": "number", "description": "Daily revenue target" },
+        "monthlyRent": { "type": "number", "description": "Monthly shop rent" },
+        "monthlyElectricity": { "type": "number", "description": "Monthly electricity bill" },
+        "dailyStaffFoodBudget": { "type": "number", "description": "Daily staff food expense" },
+        "upiId": { "type": "string", "description": "Merchant UPI ID for QR payments" },
+        "autoKotEnabled": { "type": "boolean", "description": "Automatically print KOT when order starts" },
+        "zomatoStoreId": { "type": "string", "description": "Zomato partner store ID" },
+        "swiggyStoreId": { "type": "string", "description": "Swiggy partner store ID" },
+        "otherAppWebhook": { "type": "string", "description": "External ordering app webhook URL" },
+        "language": { "type": "string", "enum": ["en", "hi", "pa"], "description": "App language code" },
+        "themePreset": { "type": "string", "description": "Selected joyful color theme preset" },
+        "accentColorHex": { "type": "string", "description": "Custom accent color hex" },
+        "textColorHex": { "type": "string", "description": "Custom text color hex" },
+        "wallpaperPath": { "type": "string", "description": "Local file path of custom gallery wallpaper" },
+        "wallpaperOpacity": { "type": "number", "description": "Wallpaper overlay opacity" },
+        "darkMode": { "type": "boolean", "description": "Dark mode flag" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": ["userId", "restaurantName", "language", "createdAt", "updatedAt"]
+    },
+    "MenuItem": {
+      "title": "MenuItem",
+      "description": "Fine-dine menu dish item with pricing, cost, veg indicator, and prep time.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "costPrice": { "type": "number" },
+        "description": { "type": "string" },
+        "veg": { "type": "boolean" },
+        "available": { "type": "boolean" },
+        "prepMinutes": { "type": "integer" },
+        "courseType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "category", "price", "veg", "available", "createdAt", "updatedAt"]
+    },
+    "OrderRecord": {
+      "title": "OrderRecord",
+      "description": "Live, pending, or completed order from Table, Own Delivery, Pickup, Online, Zomato, Swiggy, or Other App.",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string" },
+        "channel": { "type": "string", "enum": ["TABLE", "OWN_DELIVERY", "PICKUP", "ONLINE", "ZOMATO", "SWIGGY", "OTHER_APP"] },
+        "tableOrRef": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "itemsSummary": { "type": "string" },
+        "itemsCount": { "type": "integer" },
+        "subtotal": { "type": "number" },
+        "gstEnabled": { "type": "boolean" },
+        "gstPercent": { "type": "number" },
+        "gstAmount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "tipAmount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["CASH", "CARD", "QR_UPI", "ONLINE_PREPAID"] },
+        "status": { "type": "string", "enum": ["PENDING", "RUNNING", "COMPLETED", "CANCELLED"] },
+        "kotPrinted": { "type": "boolean" },
+        "billPrinted": { "type": "boolean" },
+        "notes": { "type": "string" },
+        "createdAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderNumber", "channel", "itemsSummary", "itemsCount", "subtotal", "gstEnabled", "totalAmount", "paymentMethod", "status", "createdAt", "updatedAt"]
+    },
+    "StaffMember": {
+      "title": "StaffMember",
+      "description": "Restaurant staff details, role, salary, food allowance, and shift hours.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "phone": { "type": "string" },
+        "monthlySalary": { "type": "number" },
+        "dailyFoodAllowance": { "type": "number" },
+        "shiftHours": { "type": "integer" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "role", "monthlySalary", "active", "createdAt", "updatedAt"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Staff attendance entry with exact date, check-in/out time, status, and tip earned.",
+      "type": "object",
+      "properties": {
+        "staffId": { "type": "string" },
+        "staffName": { "type": "string" },
+        "role": { "type": "string" },
+        "dateStr": { "type": "string" },
+        "checkInTimeStr": { "type": "string" },
+        "checkOutTimeStr": { "type": "string" },
+        "status": { "type": "string", "enum": ["PRESENT", "HALF_DAY", "ABSENT"] },
+        "tipEarned": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["staffId", "staffName", "dateStr", "status", "createdAt", "updatedAt"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Kitchen items, packing materials, tandoor coal, and cold drinks inventory with low-stock threshold.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["KITCHEN", "PACKING", "TANDOOR_COAL", "COLD_DRINKS"] },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "minThreshold": { "type": "number" },
+        "costPerUnit": { "type": "number" },
+        "expiryDate": { "type": "string" },
+        "supplierPhone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "category", "quantity", "unit", "minThreshold", "createdAt", "updatedAt"]
+    },
+    "DailyExpense": {
+      "title": "DailyExpense",
+      "description": "Daily operational expense (salary, rent, gas, expiry material, electricity, staff food).",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "category": { "type": "string", "enum": ["STAFF_SALARY", "SHOP_RENT", "MATERIAL_GAS", "EXPIRY_LOSS", "ELECTRICITY", "STAFF_FOOD", "OTHER"] },
+        "amount": { "type": "number" },
+        "dateStr": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "amount", "dateStr", "createdAt", "updatedAt"]
+    },
+    "PartyBooking": {
+      "title": "PartyBooking",
+      "description": "Party event booking with contact details, inventory used, and chef inventory requirements.",
+      "type": "object",
+      "properties": {
+        "partyName": { "type": "string" },
+        "partyPhone": { "type": "string" },
+        "eventDate": { "type": "string" },
+        "guestCount": { "type": "integer" },
+        "totalBudget": { "type": "number" },
+        "advancePaid": { "type": "number" },
+        "inventoryUsedSummary": { "type": "string" },
+        "chefRequirements": { "type": "string" },
+        "status": { "type": "string", "enum": ["BOOKED", "CONFIRMED", "COMPLETED", "CANCELLED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["partyName", "eventDate", "guestCount", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/RestaurantProfile" },
+      "description": "Owner restaurant profile and customization settings"
+    },
+    "/users/{userId}/menu_items/{itemId}": {
+      "schema": { "$ref": "#/entities/MenuItem" },
+      "description": "Restaurant fine-dine menu items"
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderRecord" },
+      "description": "Restaurant orders across Dine-In, Own Delivery, Pickup, Online, Zomato, Swiggy, and Other Apps"
+    },
+    "/users/{userId}/staff/{staffId}": {
+      "schema": { "$ref": "#/entities/StaffMember" },
+      "description": "Staff directory and salary details"
+    },
+    "/users/{userId}/attendance/{attendanceId}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "Staff attendance logs with date, time, and tips"
+    },
+    "/users/{userId}/inventory/{inventoryId}": {
+      "schema": { "$ref": "#/entities/InventoryItem" },
+      "description": "Kitchen, packing, tandoor coal, and cold drink inventory"
+    },
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/DailyExpense" },
+      "description": "Daily operational cost records"
+    },
+    "/users/{userId}/party_bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/PartyBooking" },
+      "description": "Party bookings, consumed inventory, and chef requirements"
+    }
+  }
+}
